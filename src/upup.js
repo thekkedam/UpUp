@@ -1,11 +1,11 @@
 //! UpUp
-//! version : 1.0.0
+//! version : 1.1.0
 //! author  : Tal Ater @TalAter
 //! license : MIT
 //! https://github.com/TalAter/UpUp
 
-(function (undefined) {
-  "use strict";
+(function(undefined) {
+  'use strict';
 
   /**
    * # Quick Start
@@ -42,7 +42,7 @@
    * It is possible to keep `upup.min.js` outside the scope (e.g. in a CDN), as long as `upup.sw.min.js` is kept local (that file's location determines the scope).
    * If you choose to keep the two in separate directories, make sure to pass the `service-worker-url` [setting](https://github.com/TalAter/UpUp/tree/master/docs#settings).
    * ````html
-   * <script src="//cdnjs.cloudflare.com/ajax/libs/UpUp/1.0.0/upup.min.js"></script>
+   * <script src="//cdnjs.cloudflare.com/ajax/libs/UpUp/1.1.0/upup.min.js"></script>
    * <script>
    * UpUp.start({
    *   'content-url': 'offline.html',
@@ -51,6 +51,10 @@
    * });
    * </script>
    * ````
+   *
+   * It is also possible to modify the scope that UpUp will control by using the [scope setting](https://github.com/TalAter/UpUp/tree/master/docs#settings). Note that this scope must be contained at the same level as the service worker file, or deeper.
+   *
+   * e.g., If `upup.sw.min.js` is located at the root of your site you can limit the scope to the root (default behavior) or a subdirectory under it. If `upup.sw.min.js` is located in a subdirectory you can limit the scope to that subdirectory (default behavior), a subdirectory within the first subdirectory, but not a different subdirectory under the root, or the root.
    *
    * ### Cache Versions
    *
@@ -105,6 +109,7 @@
    * - `cache-version`      (String|Number) Optional version number, change this when offline files change. UpUp will download and cache all content-url and assets files again
    * - `service-worker-url` (String)  The url to the service worker file (`upup.sw.min.js`)
    *                                  Allows loading `upup.min.js` from a CDN while `upup.sw.min.js` stays local (see [scope](https://github.com/TalAter/UpUp/blob/master/docs/README.md#scope))
+   * - `scope`              (String)  The scope to limit the service worker to (see [scope](https://github.com/TalAter/UpUp/blob/master/docs/README.md#scope))
    *
    * # API Reference
    */
@@ -125,7 +130,8 @@
 
   // Settings live here, and these are their defaults
   var _settings = {
-    'service-worker-url': 'upup.sw.min.js'
+    'service-worker-url': 'upup.sw.min.js',
+    'registration-options': {},
   };
 
   var _debugState = false;
@@ -156,7 +162,7 @@
       this.addSettings(settings);
 
       // register the service worker
-      _serviceWorker.register(_settings['service-worker-url'], {scope: './'}).then(function(registration) {
+      _serviceWorker.register(_settings['service-worker-url'], _settings['registration-options']).then(function(registration) {
         // Registration was successful
         if (_debugState) {
           console.log('Service worker registration successful with scope: %c'+registration.scope, _debugStyle);
@@ -199,15 +205,26 @@
 
       // if we got a string, instead of a settings object, use that string as the content
       if (typeof settings === 'string') {
-        settings = {'content': settings};
+        settings = { content: settings };
       }
 
       // add new settings to our settings object
-      ['content', 'content-url', 'assets', 'service-worker-url', 'cache-version'].forEach(function(settingName) {
+      [
+        'content',
+        'content-url',
+        'assets',
+        'service-worker-url',
+        'cache-version',
+      ].forEach(function(settingName) {
         if (settings[settingName] !== undefined) {
           _settings[settingName] = settings[settingName];
         }
       });
+
+      // Add scope setting
+      if (settings['scope'] !== undefined) {
+        _settings['registration-options']['scope'] = settings['scope'];
+      }
     },
 
     /**
@@ -224,8 +241,6 @@
       } else {
         _debugState = true;
       }
-    }
-
+    },
   };
-
-}).call(this);
+}.call(this));
